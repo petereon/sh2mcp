@@ -101,6 +101,9 @@ npx @modelcontextprotocol/inspector sh2mcp \
   --tool "echo" --description "Echo a message" --command "echo {message}"
 ```
 
+> [!CAUTION]
+> This currently doesn't work becuase of a bug in the way inspector parses arguments (https://github.com/modelcontextprotocol/inspector/pull/1162)
+
 ## Behaviour notes
 
 - **Non-zero exit codes** are returned as `isError: true` with stdout, stderr, and the exit code included so the model can reason about failures.
