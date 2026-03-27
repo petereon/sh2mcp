@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARY_NAME: sh2mcp
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run tests
+        run: cargo test
+
+  build-and-upload:
+    name: Build ${{ matrix.target }}
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_prefix: sh2mcp-linux-amd64
+            archive_ext: tar.gz
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_prefix: sh2mcp-macos-amd64
+            archive_ext: tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_prefix: sh2mcp-macos-arm64
+            archive_ext: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_prefix: sh2mcp-windows-amd64
+            archive_ext: zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package artifact (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar -czf ../../../${{ matrix.artifact_prefix }}.${{ matrix.archive_ext }} ${{ env.BINARY_NAME }}
+          cd ../../..
+
+      - name: Package artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          Compress-Archive -Path target/${{ matrix.target }}/release/${{ env.BINARY_NAME }}.exe -DestinationPath ${{ matrix.artifact_prefix }}.${{ matrix.archive_ext }}
+
+      - name: Generate checksum
+        shell: bash
+        run: |
+          filename="${{ matrix.artifact_prefix }}.${{ matrix.archive_ext }}"
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            shasum -a 256 "$filename" > "$filename.sha256"
+          else
+            sha256sum "$filename" > "$filename.sha256"
+          fi
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ${{ matrix.artifact_prefix }}.${{ matrix.archive_ext }}
+            ${{ matrix.artifact_prefix }}.${{ matrix.archive_ext }}.sha256

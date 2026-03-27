@@ -1,0 +1,17 @@
+[package]
+name = "sh2mcp"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "sh2mcp"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+rmcp = { version = "1", features = ["server", "transport-io"], default-features = false }
+tokio = { version = "1", features = ["full"] }
+serde_json = "1"
+anyhow = "1"
+regex = "1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
