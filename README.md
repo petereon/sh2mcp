@@ -9,7 +9,7 @@ sh2mcp --tool "disk" --description "Check disk usage" --command "df -h"
 ## Installation
 
 ```bash
-cargo install --git https://github.com/petervyboch/toona
+cargo install --git https://github.com/petervyboch/sh2mcp
 ```
 
 Or build from source:
